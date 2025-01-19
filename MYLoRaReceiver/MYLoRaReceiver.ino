@@ -70,9 +70,10 @@ void loop() {
     Serial.println(LoRa.packetRssi());
     
     // repeat message
-    // LoRa.beginPacket();
-    // LoRa.print(message);
-    // LoRa.endPacket();
+    LoRa.beginPacket();
+    LoRa.print(message);
+    LoRa.endPacket();
+    Serial.print("Relayed :)");
     digitalWrite(ledPin, LOW);
   }
 }
