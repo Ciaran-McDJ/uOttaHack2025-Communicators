@@ -1,0 +1,189 @@
+#define LGFX_TTGO_TDISPLAY    
+#define LGFX_AUTODETECT             // TTGO T-Display
+
+#include <LovyanGFX.hpp>
+#include <LGFX_AUTODETECT.hpp> 
+
+// SENDER CODE
+#include <SPI.h>
+#include <LoRa.h>
+// defining SPI pins
+#define SCK 25
+#define MISO 27
+#define MOSI 26
+#define NSS 33
+// defining LoRa pins
+#define RST 2
+#define DIO0 17
+
+static LGFX lcd;
+static LGFX_Sprite sprite(&lcd);
+
+const int knob1 = 39;
+int knobv1 = 0;
+
+const int button1 = 15;
+const int button2 = 13;
+const int button3 = 12;
+
+bool buttons[] = {0,0,0};
+
+
+const uint32_t black = 0x000000;
+const uint32_t white = 0xFFFFFF;
+const uint32_t keycolor = 0xFE7713;
+const uint32_t accentcolor = 0xFFA84A;
+
+char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+char textopts[] = "abcdefghijklmnopqrstuvwxyz>";
+char numbers[] = "0123456789";
+
+int letterindex = 0;
+
+int MAINSTATE = 0;
+
+String message = "";
+
+
+
+int mapAnalogRange(int in, int maxout){
+  float x = in/4095.0 * maxout;
+  int output = (int)x;
+  return output;
+}
+
+
+void setup() {
+  SPI.begin(SCK, MISO, MOSI, NSS); // custom pins for SPI (because defaults are hidden)
+  LoRa.setPins(NSS, RST, DIO0); // custom pins for LoRa (because defaults are hidden)
+
+  lcd.init();
+  lcd.setRotation(1);
+  lcd.setBrightness(128);
+  lcd.setColorDepth(24);
+  Serial.begin(115200);
+
+  pinMode(button1, INPUT);
+  pinMode(button2, INPUT);
+  pinMode(button3, INPUT);
+
+  sprite.createSprite(lcd.width(), lcd.height());
+
+  if (!LoRa.begin(433E6)) {
+    // Serial.println("Starting LoRa failed!");
+    while (1);
+  }
+}
+
+// void processInput(){
+  
+// }
+
+void loop() {
+  sprite.fillScreen(black);
+  sprite.setTextFont(4);
+
+  sprite.setTextSize(1);
+  sprite.setTextColor(keycolor, black);   // Set text color to green and padding to back
+
+  //check inpits
+  knobv1 = analogRead(knob1);
+  letterindex = mapAnalogRange(knobv1, 26);
+  char letter = (textopts[letterindex]);
+
+  sprite.startWrite();
+  if (digitalRead(button1) == HIGH){ // BACK
+    delay(1000); // TODO: this is here to avoid double inputs, but it messes with receiving messages. fix later
+    sprite.fillRect(20 , 110, 20, 20, white);
+    if (sizeof(message) > 0){
+      message.remove(sizeof(message)-1);
+    }
+  }
+  if (digitalRead(button2) == HIGH){ // SELECT
+    delay(1000); // TODO: this is here to avoid double inputs, but it messes with receiving messages. fix later
+    sprite.fillRect(50,  110, 20, 20, white);
+    message += letter;
+    Serial.println(message);
+  }
+  if (digitalRead(button3) == HIGH){ // VIEW MSG
+    delay(1000); // TODO: this is here to avoid double inputs, but it messes with receiving messages. fix later
+    sprite.fillRect(80, 110, 20, 20, white);
+  }
+  sprite.endWrite();
+
+
+  //drawopts(textopts, -letter, letter);
+  drawtextbox();
+  drawletterfinder(letter);
+  //Serial.println(&(letters[letter]));
+
+  delay(20);
+  sprite.pushSprite(0,0);
+}
+
+void drawtextbox(){
+  int posy = 45;
+  sprite.startWrite();
+  sprite.drawRect(5,posy, 240-10, 70, white);
+  sprite.setTextColor(white, black);
+  sprite.drawString(message, 15, posy + 7);
+}
+
+void drawletterfinder(char letter){
+  int posy = 11;
+  //screen dimensions 240x135
+  sprite.startWrite();
+  sprite.drawRect(5,5, 240-10, 35, accentcolor);
+  char l = letter;
+
+  //draw main letter
+  sprite.setTextColor(keycolor, black); 
+  sprite.drawString(&l,115,posy);
+  sprite.endWrite();
+
+  // for (int i = 0; i < 5: i++){
+  //   lcd.dra
+  // }
+
+
+}
+
+// void drawopts(char opts[], int scrollx, int letter) {
+//   int pad = 5;
+//   int fullwidth = 0;
+//   int optheight = 33;
+//   int spacing = 2;
+
+//   int loop = sizeof(opts);
+
+//   for (int i = 0; i <= loop; i++) {
+//     if (i == letter){
+//       lcd.setTextColor(white, accentcolor);
+//       lcd.fillRect(pad + spacing + (int)(spacing* i) + optheight *i + scrollx, pad + spacing, optheight, optheight, accentcolor);
+//       lcd.drawString(&(alphabet[letter]), pad + spacing + (int)(spacing* i) + scrollx, pad + spacing, 2);
+//     }
+//     else {
+//       lcd.setTextColor(keycolor, black);
+//       lcd.drawRect(pad + spacing + (int)(spacing* i) + optheight*i + scrollx, pad + spacing, optheight, optheight, accentcolor);
+//     }
+//   }
+// }
+// void MAINMENU() {
+
+//   int iconsize = 40;
+//   int textheight = 60;
+//   int padding = 20;
+//   int textpad = 2;
+//   float scrollx = 0;
+
+//   tft.setTextColor(TFT_WHITE);
+
+//   //String[] opts = {"Messaging, Debug"}
+//   for (int i = 0; i == 3; i++ ){
+//       tft.drawRect((int)(padding + scrollx + (i*padding)) ,(int)padding, (int)iconsize, (int)iconsize, TFT_GREEN);
+//       tft.drawString("menu opt", (int)(padding + textpad), (int)(textheight - textpad));
+//   }
+
+  
+
+// }
