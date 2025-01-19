@@ -16,6 +16,8 @@
 #define RST 2
 #define DIO0 17
 
+#define ledPin 32
+
 static LGFX lcd;
 static LGFX_Sprite sprite(&lcd);
 
@@ -102,7 +104,9 @@ void loop() {
   if (digitalRead(button2) == HIGH){ // SELECT
     delay(1000); // TODO: this is here to avoid double inputs, but it messes with receiving messages. fix later
     if (letter == '>') {
-      sendMessage(createMessage());
+      char* char_message = (char*) malloc(sizeof(message)); //TODO - need to dealloc when done with message! (in a few spots)
+      strcpy(char_message, message.c_str());
+      sendMessage(createMessage(char_message));
       String newstr = "";
       message = newstr;
     }
@@ -175,10 +179,10 @@ void sendMessage(char* theMessage) {
 
 
 
-char* createMessage() {
-  char* theMessage;
-  message.toCharArray(theMessage, sizeof(message));
-  char* mesWithHead = addSizeHeader(theMessage);
+char* createMessage(char* message) {
+  // char* theMessage;
+  // message.toCharArray(theMessage, sizeof(message));
+  char* mesWithHead = addSizeHeader(message);
   return mesWithHead;
 }
 
