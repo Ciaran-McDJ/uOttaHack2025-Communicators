@@ -80,7 +80,7 @@ void setup() {
 // }
 
 void loop() {
-  sprite.fillScreen(black);
+  //sprite.fillScreen(black);
   sprite.setTextFont(4);
 
   sprite.setTextSize(1);
@@ -94,47 +94,62 @@ void loop() {
   sprite.startWrite();
   if (digitalRead(button1) == HIGH){ // BACK
     delay(1000); // TODO: this is here to avoid double inputs, but it messes with receiving messages. fix later
-    sprite.fillRect(20 , 110, 20, 20, white);
+    //sprite.fillRect(20 , 110, 20, 20, white);
     if (sizeof(message) > 0){
       message.remove(sizeof(message)-1);
     }
   }
   if (digitalRead(button2) == HIGH){ // SELECT
     delay(1000); // TODO: this is here to avoid double inputs, but it messes with receiving messages. fix later
-    sprite.fillRect(50,  110, 20, 20, white);
-    message += letter;
-    Serial.println(message);
+    if (letter == '>') {
+      sendMessage(createMessage());
+      String newstr = "";
+      message = newstr;
+    }
+    else{
+      message += letter;
+    }
+    drawtextbox(letter);
   }
   if (digitalRead(button3) == HIGH){ // VIEW MSG
     delay(1000); // TODO: this is here to avoid double inputs, but it messes with receiving messages. fix later
-    sprite.fillRect(80, 110, 20, 20, white);
+    //sprite.fillRect(80, 110, 20, 20, white);
   }
   sprite.endWrite();
 
 
+
+
   //drawopts(textopts, -letter, letter);
-  drawtextbox();
   drawletterfinder(letter);
+  
   //Serial.println(&(letters[letter]));
 
   delay(20);
   sprite.pushSprite(0,0);
 }
 
-void drawtextbox(){
+void drawtextbox(char letter){
   int posy = 45;
+  
   sprite.startWrite();
+  sprite.fillRect(0,40,240,95, black); //refresh botthom screen
+  //sprite.fillRect(50,  110, 20, 20, white);
+  Serial.println(message);
   sprite.drawRect(5,posy, 240-10, 70, white);
   sprite.setTextColor(white, black);
   sprite.drawString(message, 15, posy + 7);
+  sprite.endWrite();
 }
 
 void drawletterfinder(char letter){
   int posy = 11;
+  char l = letter;
+  
   //screen dimensions 240x135
   sprite.startWrite();
+  sprite.fillRect(0,0,240,40, black); //clear upper screen
   sprite.drawRect(5,5, 240-10, 35, accentcolor);
-  char l = letter;
 
   //draw main letter
   sprite.setTextColor(keycolor, black); 
@@ -144,8 +159,76 @@ void drawletterfinder(char letter){
   // for (int i = 0; i < 5: i++){
   //   lcd.dra
   // }
+}
+
+// MORE SENDER FUNCTIONS
+void sendMessage(char* theMessage) {
+  Serial.println("Sending packet");
+
+  // send packet
+  LoRa.beginPacket();
+  LoRa.print(theMessage);
+  LoRa.endPacket();
+  Serial.println(theMessage);
+}
 
 
+
+
+char* createMessage() {
+  char* theMessage;
+  message.toCharArray(theMessage, sizeof(message));
+  char* mesWithHead = addSizeHeader(theMessage);
+  return mesWithHead;
+}
+
+#define HeaderSize 3 // This is number of decimal digits in header corresponding to size of message
+
+char* addSizeHeader(char* theMessage) {
+  // """This adds size of message in decimal (excluiding size of decimal chars)""" // TODO - this would probably be better in binary
+  // Serial.print("\n");
+  // Serial.print(message);
+  size_t len = strlen(theMessage); //todo try int
+  // Serial.print("debug ");
+  // Serial.print(len);
+  // Serial.print("\n");
+
+  static char* mesWithHead = (char*) malloc(sizeof(char)*(len+HeaderSize+1)); //+1 is so it has space for null terminator, not sure if its necessary
+  copy_string(convertTo3Chars(len), mesWithHead);
+  copy_string(theMessage, mesWithHead+3);
+  // sprintf(mes_whead, "%d", convertTo3Chars(len));
+  // Serial.print(mes_whead);
+
+  return mesWithHead;
+}
+
+char* convertTo3Chars(int num) {
+  static char char_nums[3];
+  sprintf(char_nums, "%d", num);
+
+  int amount_to_shift = 3 - strlen(char_nums);
+
+  for (int x = 0; x < amount_to_shift; x++) {
+    char_nums[2] = char_nums[1];
+    char_nums[1] = char_nums[0];
+    char_nums[0] = '0';
+  }
+
+  // Serial.print("\namount to shift:");
+  // Serial.print(amount_to_shift);
+  // Serial.print(" char_nums: ");
+  // Serial.print(char_nums);
+
+  return char_nums;
+}
+
+void copy_string(char *src, char *dest) {
+    while (*src) {
+        *dest = *src;
+        src++;
+        dest++;
+    }
+    *dest = '\0';  // Null terminate the destination string
 }
 
 // void drawopts(char opts[], int scrollx, int letter) {
