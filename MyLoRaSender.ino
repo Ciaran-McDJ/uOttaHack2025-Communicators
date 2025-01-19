@@ -1,3 +1,4 @@
+// TODO - need to merge with LCD input stuff
 #include <SPI.h>
 #include <LoRa.h>
 // defining SPI pins
